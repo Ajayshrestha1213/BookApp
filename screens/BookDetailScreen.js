@@ -7,15 +7,15 @@ const BookDetailScreen = ({ route, navigation }) => {
   const { borrowBook } = useBooks();
   const [isBorrowing, setIsBorrowing] = useState(false);
 
-  const handleBorrow = () => {
+  const handleBorrow = async () => {
     setIsBorrowing(true);
 
-    const success = borrowBook(book);
+    const result = await borrowBook(book);
 
-    if (success) {
-      Alert.alert('Success', 'Book borrowed successfully!');
+    if (result.success) {
+      Alert.alert('Success', result.message);
     } else {
-      Alert.alert('Limit Reached', 'You can borrow only up to 3 books at a time.');
+      Alert.alert('Limit Reached', result.message);
     }
 
     setIsBorrowing(false);
@@ -85,22 +85,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
     lineHeight: 22,
-    textAlign: 'justify',
   },
   borrowButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 15,
-    borderRadius: 30,
+    backgroundColor: '#007BFF',
+    padding: 15,
+    borderRadius: 5,
     alignItems: 'center',
-    marginBottom: 20,
   },
   borrowButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
   },
   disabledButton: {
-    backgroundColor: '#A5D6A7',
+    backgroundColor: '#ccc',
   },
 });
 

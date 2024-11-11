@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useBooks } from '../context/BooksContext'; 
 import { db } from '../firebaseConfig'; 
@@ -12,47 +12,53 @@ const BookListScreen = () => {
 
   useEffect(() => {
     const fetchBooks = async () => {
-      const booksCollection = await getDocs(collection(db, 'books'));
-      setBooks(booksCollection.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const booksCollection = collection(db, 'books');
+      const querySnapshot = await getDocs(booksCollection);
+      const booksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setBooks(booksList);
     };
+
     fetchBooks();
   }, []);
 
-  const handleBorrow = (book) => {
-    const success = borrowBook(book);
-    if (success) {
-      alert('Book borrowed successfully!');
+  const handleBorrow = async (book) => {
+    const result = await borrowBook(book);
+    if (result.success) {
+      Alert.alert('Success', result.message);
     } else {
-      alert('You can borrow only up to 3 books at a time!');
+      Alert.alert('Error', result.message);
     }
+  };
+
+  const handleNavigateToDetail = (book) => {
+    navigation.navigate('BookDetail', { book }); // Navigate to BookDetail screen with book data
+  };
+
+  const renderBookItem = ({ item }) => {
+    return (
+      <View style={styles.bookContainer}>
+        <TouchableOpacity onPress={() => handleNavigateToDetail(item)}>
+          <Image source={{ uri: item.coverImage }} style={styles.coverImage} />
+        </TouchableOpacity>
+        <View style={styles.bookDetails}>
+          <TouchableOpacity onPress={() => handleNavigateToDetail(item)}>
+            <Text style={styles.title}>{item.title}</Text>
+          </TouchableOpacity>
+          <Text style={styles.author}>{item.author}</Text>
+          <TouchableOpacity onPress={() => handleBorrow(item)} style={styles.borrowButton}>
+            <Text style={styles.borrowButtonText}>Borrow</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={books}
+        renderItem={renderBookItem}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.author}>{item.author}</Text>
-            <Text style={styles.rating}>Rating: {item.rating}</Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={styles.button} 
-                onPress={() => navigation.navigate('BookDetail', { book: item })}
-              >
-                <Text style={styles.buttonText}>View Details</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, styles.borrowButton]} 
-                onPress={() => handleBorrow(item)}
-              >
-                <Text style={styles.buttonText}>Borrow</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       />
     </View>
   );
@@ -62,49 +68,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
-    backgroundColor: '#f4f4f4',  // Light background color
   },
-  card: {
-    backgroundColor: '#fff',
-    marginBottom: 15,
-    padding: 20,
-    borderRadius: 15,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
+  bookContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  coverImage: {
+    width: 100,
+    height: 150,
+    marginRight: 10,
+  },
+  bookDetails: {
+    flex: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
   },
   author: {
     fontSize: 16,
-    color: '#777',
-    marginBottom: 15,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  button: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 30,
-    alignItems: 'center',
-    width: '48%',
+    marginBottom: 10,
   },
   borrowButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#007BFF',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
   },
-  buttonText: {
+  borrowButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { db } from '../firebaseConfig'; 
-import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 
 const BooksContext = createContext();
 
@@ -18,9 +18,14 @@ export const BooksProvider = ({ children }) => {
   }, []);
 
   const borrowBook = async (book) => {
-    if (borrowedBooks.length >= 3) return false; // Limit to 3 books
-
     try {
+      const querySnapshot = await getDocs(collection(db, 'borrowedBooks'));
+      const borrowedBooksList = querySnapshot.docs.map(doc => doc.data());
+
+      if (borrowedBooksList.length >= 3) {
+        return { success: false, message: 'You can only borrow up to 3 books.' };
+      }
+
       await addDoc(collection(db, 'borrowedBooks'), {
         bookId: book.id,
         title: book.title,
@@ -32,10 +37,10 @@ export const BooksProvider = ({ children }) => {
       });
 
       setBorrowedBooks((prevBooks) => [...prevBooks, book]);
-      return true;
+      return { success: true, message: 'Book borrowed successfully!' };
     } catch (error) {
       console.error('Error borrowing book:', error);
-      return false;
+      return { success: false, message: 'Error borrowing book. Please try again.' };
     }
   };
 
